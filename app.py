@@ -2,7 +2,7 @@ from flask import Flask, flash, redirect, render_template, request, session
 from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import check_password_hash, generate_password_hash
-# from functions import ...
+from functions import login_required
 
 # configure app
 app = Flask(__name__)
@@ -38,8 +38,8 @@ def register():
             flash("Enter a username")
             return render_template("register.html")
         # check if username already exists in db
-        check = db.execute("SELECT id FROM users WHERE LOWER(username) = LOWER(?)", username)
-        if len(check) > 0:
+        checkUsername = db.execute("SELECT id FROM users WHERE LOWER(username) = LOWER(?)", username)
+        if len(checkUsername) > 0:
             flash("Username already exists")
             return render_template("register.html") 
         # check for password input
@@ -50,6 +50,11 @@ def register():
         if password1 != password2:
             flash("Passwords don't match")
             return render_template("register.html")
+        # check if mailaddress already exists in db
+        checkUserMail = db.execute("SELECT id FROM users WHERE LOWER(username) = LOWER(?)", mailAddress)
+        if len(checkUserMail) > 0:
+            flash("Mail adress already exists")
+            return render_template("register.html") 
         # hash account and mail passwords
         accountHash = generate_password_hash(password1)
         mailHash = generate_password_hash(mailPassword)
@@ -109,8 +114,36 @@ def login():
     else:
         return render_template("login.html")
 
+# logout
+app.route("/logout")
+def logout():
+        # clear session from user info
+        session.clear()
+        flash("Logged out")
+        # redirect user to homepage
+        redirect("/")
 
-# homepage
+# user page (contains user panel and extra user information, settings to change mail or color theme etc..)
+app.route("/user")
+@login_required
+def user():
+    userID = session["user_id"]
+    # setup db query's for user info using jinja
+    currentMail = db.execute()
+    currentMailPassword = db.execute()
+    # update db(button to change), check if they unique in db
+    newMailSetting = db.execute()
+    newMailPassword = db.execute()
+    newAccountPassword = db.execute()
+    
+     = db.execute()
+
+
+
+# history
+@login_required()
+
+# homepage(contains app information, updates, regular information, main page with login/registration button etc)
 @app.route("/")
 def index(): 
     return render_template("index.html")
@@ -119,9 +152,8 @@ if __name__ == "__main__":
     app.run(debug=True)
 
 
-# logout
 
-# history
+
 
 
 

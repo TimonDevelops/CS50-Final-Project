@@ -124,28 +124,56 @@ def logout():
         redirect("/")
 
 # user page (contains user panel and extra user information, settings to change mail or color theme etc..)
-app.route("/user")
+app.route("/user", methods=["GET", "POST"])
 @login_required
 def user():
     userID = session["user_id"]
-    # setup db query's for user info using jinja
-    currentMail = db.execute()
-    currentMailPassword = db.execute()
-    # update db(button to change), check if they unique in db
-    newMailSetting = db.execute()
-    newMailPassword = db.execute()
-    newAccountPassword = db.execute()
-    
-     = db.execute()
+    # db query for user info
+    currentMail = db.execute("SELECT mailAddress FROM users wherer id = ?", userID)
 
+    if request.method == "POST":
+    # update db(button to change), new email, new email password or new account password
 
+        # check for unique email and update if so
+        newMailAddress = request.form.get("newMailSetting", "").strip
+        if newMailAddress:
+            checkUserMail = db.execute("SELECT id FROM users WHERE LOWER(username) = LOWER(?)", newMailAddress)
+            if len(checkUserMail) > 0:
+                flash("Mail adress already exists")
+                return render_template("user.html") 
+            db.execute("UPDATE users SET mailAddress = ? WHERE id = ?", newMailAddress, userID)
+        # update mail password
+        newMailPassword = request.form.get("newMailPassword").strip
+        if newMailPassword:
+            hash = generate_password_hash(newMailPassword)
+            db.execute("UPDATE users SET mailHash = ? WHERE id = ?", hash, userID )
+       # fill in recent password as security measure
+        filledAccountPassword = request.form.get("filledAccountPassword")
+        trueAccountPassword = db.execute("SELECT loginHash FROM users WHERE id = ?", userID)
+        if not check_password_hash(trueAccountPassword[0]["loginHash"], filledAccountPassword):
+            flash("Password incorrect")
+            return render_template("user.html")
+         # check if new passwords match
+        newAccountPassword1 = request.form.get("newMailPassword1")
+        newAccountPassword2 = request.form.get("newMailPassword2")
+        if newAccountPassword1 != newAccountPassword2:
+            flash("Passwords don't match")
+            return render_template("user.html")
+        hash = generate_password_hash(newAccountPassword1)
+        db.execute("UPDATE users SET loginhash = ? WHERE id = ?", hash, userID)
 
-# history
+    else: 
+        return render_template("user.html", currentMail=currentMail[0]["mailAddress"])
+
+# usage, showcases tabels of all live package information
 @login_required()
+
 
 # homepage(contains app information, updates, regular information, main page with login/registration button etc)
 @app.route("/")
 def index(): 
+    # if logged in, then show only logout button in navbar
+    # if logged out, then show only login and register button in navbar
     return render_template("index.html")
 
 if __name__ == "__main__":

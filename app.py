@@ -2,7 +2,7 @@ from flask import Flask, flash, redirect, render_template, request, session
 from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import check_password_hash, generate_password_hash
-from functions import login_required
+from functions import login_required, is_logged_in
 
 # configure app
 app = Flask(__name__)
@@ -50,6 +50,7 @@ def register():
         if password1 != password2:
             flash("Passwords don't match")
             return render_template("register.html")
+
         # check if mailaddress already exists in db
         checkUserMail = db.execute("SELECT id FROM users WHERE LOWER(username) = LOWER(?)", mailAddress)
         if len(checkUserMail) > 0:
@@ -123,7 +124,7 @@ def logout():
         # redirect user to homepage
         redirect("/")
 
-# user page (contains user panel and extra user information, settings to change mail or color theme etc..)
+# user page (contains user panel and extra user information, how to set up mail/proxy settings imap, settings to change (proxy)mail or color theme etc..)
 app.route("/user", methods=["GET", "POST"])
 @login_required
 def user():
@@ -165,21 +166,31 @@ def user():
     else: 
         return render_template("user.html", currentMail=currentMail[0]["mailAddress"])
 
-# usage, showcases tabels of all live package information
+# usage, showcases tables of all live package information
+@app.route("usage", methods=["GET", "POST"])
 @login_required()
+def usage():
+    if request.method == "POST":
+        # track and trace code is inserted manualy
+        userID = session["user_id"]
+        ttCode = request.form.get("ttCode")
+        db.execute("INSERT INTO ttCode (userID, ttCode)  VALUES (?, ?)", userID, ttCode)
+
+
+    # db info to make row with
+    return render_template("usage.html")
 
 
 # homepage(contains app information, updates, regular information, main page with login/registration button etc)
 @app.route("/")
 def index(): 
-    # if logged in, then show only logout button in navbar
-    # if logged out, then show only login and register button in navbar
-    return render_template("index.html")
+    # if logged in, then show only logout button in navbar, else show only login and register button in navbar
+    return render_template("index.html", is_logged_in=is_logged_in())
 
 if __name__ == "__main__":
     app.run(debug=True)
 
-
+## build db for email tables
 
 
 

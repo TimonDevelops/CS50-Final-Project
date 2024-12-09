@@ -1,0 +1,49 @@
+{% extends "layout.html" %}
+
+{% block title %}Register{% endblock %}
+
+{% block main %}
+<body>
+    <div>
+        <h2>Create Account</h2>
+        <form action="/register" method="POST">
+            <input type="text" name="username" placeholder="Youre name" required>
+            <input type="password" name="password1" placeholder="Create password" required>
+            <input type="password" name="username2" placeholder="Repeat password" required>
+            <p>
+            To streamline the package tracking process, include fields for the email address and password associated with the account receiving track-and-trace codes. 
+            These credentials will be used securely to retrieve and process tracking information efficiently.
+            </p>            
+            <input type="text" name="mailAddress" placeholder="Enter email" >
+            <input type="password" name="mailPassword" placeholder="Email password" >
+            <p>
+            By using this app, you agree to the 
+            <button onclick="showDisclaimer()">Disclaimer</button>
+            </p>
+            <div id="disclaimerModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); padding:20px; background-color:white; border:1px solid #ccc; box-shadow:0 4px 8px rgba(0,0,0,0.1); z-index:1000;">
+                <h2>Disclaimer</h2>
+                <p>
+                    By using this app, you authorize it to access your email account to search for track-and-trace codes and monitor the statuses of your packages. 
+                    Your credentials will be securely stored in a protected database and used solely for this purpose. 
+                    The app employs strict security protocols to ensure the confidentiality and safety of your data. 
+                </p>
+                <p>
+                    However, you are responsible for ensuring that this use complies with your email provider's terms of service. 
+                    While the app is designed to function securely and reliably, the developers are not liable for any unauthorized access, misuse of your email account, or errors in tracking data. 
+                    Use this app at your own discretion.
+                </p>
+                <button onclick="closeDisclaimer()">Close</button>
+            </div>
+            <button type="submit">Create Account</button>
+        </form>
+    </div>
+    <script>
+        function showDisclaimer() {
+            document.getElementById('disclaimerModal').style.display = 'block';
+        }
+        function closeDisclaimer() {
+            document.getElementById('disclaimerModal').style.display = 'none';
+        }
+    </script>
+</body>
+{% endblock %}

@@ -1,6 +1,7 @@
 from flask import session
 from functools import wraps
 from flask import g, request, redirect, url_for
+import sqlite3
 
 # function to check if someone is logged in
 def is_logged_in():
@@ -17,6 +18,26 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
+#db functions
+# read - return dictionary type list
+def dbRead(query, params=()):
+    with sqlite3.connect("packageTracker.db") as db:
+        db.row_factory = sqlite3.Row
+        cursor = db.cursor()
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+        return [dict(row) for row in rows]
+# change - auto commit
+def dbChange(query, params=()):
+    try:
+        with sqlite3.connect("packageTracker.db") as db:
+            cursor = db.cursor()
+            cursor.execute(query, params)
+            db.commit()
+        return True
+    except sqlite3.Error as e:
+        print(F"Database error: {e}")
+        return False
 
 # function for reading emails and retrieving it's tt code
 

@@ -1,7 +1,7 @@
 from flask import session
 from functools import wraps
-from flask import g, request, redirect, url_for
-import sqlite3
+from flask import redirect
+import sqlite3, requests
 
 # function to check if someone is logged in
 def is_logged_in():
@@ -13,8 +13,8 @@ def is_logged_in():
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if g.user is None:
-            return redirect(url_for('login', next=request.url))
+        if session.get("user_id") is None:
+            return redirect("/login")
         return f(*args, **kwargs)
     return decorated_function
 
@@ -39,6 +39,37 @@ def dbChange(query, params=()):
         print(F"Database error: {e}")
         return False
 
-# function for reading emails and retrieving it's tt code
+# function for DHL API call
+# test codes:
+# - JVGL06349971001106931267
+# - JVGL06290308000728790420
 
-# function for API calls
+# set url and header
+# test
+testBase_url = "https://api-test.dhl.com/track/shipments"
+headers = {
+    "DHL-API-Key" : ""
+}
+# real
+RealBase_url = "https://api-eu.dhl.com/track/shipments"
+headers = {
+    "DHL-API-Key" : ""
+}
+# create function
+def ttInfo(code):
+    url = f"{RealBase_url}?trackingNumber={code}"
+    try: 
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            try:
+                ttData = response.json()
+                return ttData
+            except ValueError:
+                return {"error": "No valid JSON-response from API."}
+        else:    
+             return {"error": f"API-error: {response.status_code} - {response.text}"}
+    except:
+        return {"error": f"Network problem"}
+
+# function for reading emails and retrieving it's tt code(when everythings done)
+

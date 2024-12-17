@@ -1,8 +1,7 @@
 from flask import Flask, flash, redirect, render_template, request, session
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
-from functions import login_required, is_logged_in, dbChange, dbRead
-import sqlite3
+from functions import login_required, is_logged_in, dbChange, dbRead, ttInfo
 
 # configure app
 app = Flask(__name__)
@@ -29,27 +28,27 @@ def register():
         # check for username input
         if not username:
             flash("Enter a username", "error")
-            return render_template("register.html")
+            return redirect("/register")
         # check if username already exists in db
         checkUsername = dbRead("SELECT id FROM users WHERE LOWER(username) = LOWER(?)", (username,))
         if len(checkUsername) > 0:
             flash("Username already exists", "error")
-            return render_template("register.html") 
+            return redirect("/register") 
         # check for password input
         if not password1 or not password2:
             flash("Enter a account password", "error")
-            return render_template("register.html")
+            return redirect("/register")
         
         # check if account password matches
         if password1 != password2:
             flash("Account passwords don't match", "error")
-            return render_template("register.html")
+            return redirect("/register")
 
         # check if mailaddress already exists in db
         checkUserMail = dbRead("SELECT id FROM users WHERE LOWER(username) = LOWER(?)", (mailAddress,))
         if len(checkUserMail) > 0:
             flash("Mail adress already exists", "error")
-            return render_template("register.html") 
+            return redirect("/register") 
         
         # hash account and mail passwords
         accountHash = generate_password_hash(password1)
@@ -60,7 +59,7 @@ def register():
         return redirect("/login")
 
     else:
-        return render_template("register.html")
+        return render_template("register.html", is_logged_in=is_logged_in())
 
 # login
 @app.route("/login", methods=["GET", "POST"])
@@ -103,15 +102,15 @@ def login():
 
     # dashboard reached route with GET
     else:
-        return render_template("login.html")
+        return render_template("login.html", is_logged_in=is_logged_in())
 
 # logout
 @app.route("/logout")
 @login_required
 def logout():
-        # clear session from dashboard info
-        flash("Logged out", "succes")
+        # clear session from dashboard info and clear g
         session.clear()
+        flash("Logged out", "succes")
         # redirect dashboard to homepage
         return redirect("/")
 
@@ -121,57 +120,79 @@ def logout():
 def dashboard():
     userID = session["user_id"]
     # db query for dashboard info
-    currentMail = dbRead("SELECT mailAddress FROM users wherer id = ?", (userID,))
+    currentMail = dbRead("SELECT mailAddress FROM users where id = ?", (userID,))
 
     if request.method == "POST":
     # update db(button to change), new email, new email password or new account password
 
         # check for unique email and update if so
-        newMailAddress = request.form.get("newMailSetting", "").strip
+        newMailAddress = request.form.get("newMailAddress")
         if newMailAddress:
-            checkUserMail = dbRead("SELECT id FROM users WHERE LOWER(username) = LOWER(?)", (newMailAddress,))
+            newMailAddress = request.form.get("newMailAddress").strip()
+            checkUserMail = dbRead("SELECT id FROM users WHERE LOWER(mailAddress) = LOWER(?)", (newMailAddress,))
             if len(checkUserMail) > 0:
                 flash("Mail adress already exists", "error")
-                return render_template("dashboard.html") 
+                return redirect("/dashboard") 
             dbChange("UPDATE users SET mailAddress = ? WHERE id = ?", (newMailAddress, userID))
         # update mail password
-        newMailPassword = request.form.get("newMailPassword").strip
+        newMailPassword = request.form.get("newMailPassword")
         if newMailPassword:
+            newMailPassword = request.form.get("newMailPassword").strip()
             hash = generate_password_hash(newMailPassword)
             dbChange("UPDATE users SET mailHash = ? WHERE id = ?", (hash, userID))
        # fill in recent password as security measure
         filledAccountPassword = request.form.get("filledAccountPassword")
         trueAccountPassword = dbRead("SELECT loginHash FROM users WHERE id = ?", (userID,))
-        if not check_password_hash(trueAccountPassword[0]["loginHash"], filledAccountPassword):
-            flash("Password incorrect", "error")
-            return render_template("dashboard.html")
+        if filledAccountPassword:
+            if not check_password_hash(trueAccountPassword[0]["loginHash"], filledAccountPassword):
+                flash("Password incorrect", "error")
+                return redirect("/dashboard")
          # check if new passwords match
         newAccountPassword1 = request.form.get("newMailPassword1")
         newAccountPassword2 = request.form.get("newMailPassword2")
-        if newAccountPassword1 != newAccountPassword2:
-            flash("Passwords don't match", "error")
-            return render_template("dashboard.html")
-        hash = generate_password_hash(newAccountPassword1)
-        dbChange("UPDATE users SET loginhash = ? WHERE id = ?", (hash, userID))
+        if newAccountPassword1:
+            if newAccountPassword1 != newAccountPassword2:
+                flash("Passwords don't match", "error")
+                return redirect("/dashboard")
+            hash = generate_password_hash(newAccountPassword1)
+            dbChange("UPDATE users SET loginhash = ? WHERE id = ?", (hash, userID))
+
+        # redirect after all changes are checked
+        flash("Credentials succesfully changed")
+        return redirect("/dashboard")
 
     else: 
-        return render_template("dashboard.html", currentMail=currentMail[0]["mailAddress"])
+        return render_template("dashboard.html", currentMail=currentMail[0]["mailAddress"], is_logged_in=is_logged_in())
 
 # usage, showcases tables of all live package information
 @app.route("/ttInfo", methods=["GET", "POST"])
 @login_required
 def usage():
     userID = session["user_id"]
-    row = dbRead("SELECT * FROM ttInfo WHERE userID = ? ", (userID,))
+    rows = dbRead("SELECT ttStatus, ttTimestamp, itemDescription, ttCode FROM ttInfo WHERE userID = ?",  (userID,))
     if request.method == "POST":
         # track and trace code is inserted manualy
         userID = session["user_id"]
-        ttCode = request.form.get("ttCode")
-        dbChange("INSERT INTO ttCode (userID, ttCode) VALUES (?, ?)", (userID, ttCode))
+        ttCode = request.form.get("ttManual")
+        # if tt code is legit, then update db with correct tt code and other data
+        ttRequest = ttInfo(ttCode)
+        if ttRequest:
+            ttData = ttRequest["shipments"][0]
+            ttStatusData = ttData["status"]
+            ttTimeStamp = ttStatusData["timestamp"]
+            ttStatus = ttStatusData["description"]
+            itemDescription = request.form.get("itemDescription")
+            try:
+                dbChange("INSERT INTO ttInfo (userID, ttCode, ttTimestamp, ttStatus, itemDescription) VALUES (?, ?, ?, ?, ?)", (userID, ttCode, ttTimeStamp, ttStatus, itemDescription))
+            except Exception as e:
+                print(f"Error: {e}")
+
+        ############
         return redirect("/ttInfo")
     # db info to make row with
     else:
-        return render_template("ttInfo.html", ttInfo=row)
+        # create tables with API
+        return render_template("ttInfo.html", rows=rows, is_logged_in=is_logged_in())
 
 # homepage(contains app information, updates, regular information, main page with login/registration button etc)
 @app.route("/")

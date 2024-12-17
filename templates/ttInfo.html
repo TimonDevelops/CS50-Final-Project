@@ -1,5 +1,47 @@
 {% extends "layout.html" %}
 
-{% block title %}Package Tracking Info{% endblock %}
+{% block title %}Track and Trace{% endblock %}
 
-{% block main %}ttInfo{% endblock %}
+{% block main %}
+<div>
+    <h2>Track and Trace</h2>
+    <p>Add code manually</p>
+    <form action="/ttInfo" method="POST">
+    <input type="text" name="ttManual" placeholder="T&T code">
+    <input type="text" name="itemDescription" placeholder="Describe item">
+    <button type="submit">Add code and item description</button>
+    </form>
+</div>
+<div>
+    {% set pending_packages = false %}
+    <p>Pending packages</p>
+        {% for row in rows %}
+            {% if row["ttStatus"] != "Delivered" %}
+                {% set pending_packages = true %}
+                <p>{{ row["ttCode"] }}</p>
+                <p>{{ row["ttStatus"] }}</p>
+                <p>{{ row["ttTimeStamp"] }}</p>
+                <p>{{ row["itemDescription"] }}</p> 
+            {% endif %}
+        {% endfor %}
+    {% if not pending_packages %}
+    <p>No pending packages</p>
+    {% endif %}
+
+    {% set delivered_packages = false %}
+    <p>Delivered packages</p>
+        {% for row in rows %}
+            {% if row["ttStatus"] == "Delivered" %}
+                {% set delivered_packages = true %}
+                <p>{{ row["itemDescription"] }}</p>
+                <p>{{ row["ttStatus"] }}</p>
+                <p>{{ row["ttTimeStamp"] }}</p>
+                <p>{{ row["ttCode"] }}</p>
+            {% endif %}
+        {% endfor %}
+    {% if not delivered_packages %}
+        <p>No packages delivered yet</p>    
+    {% endif %}
+</div>
+
+{% endblock %}

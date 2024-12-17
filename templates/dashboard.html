@@ -2,5 +2,26 @@
 
 {% block title %}Dashboard{% endblock %}
 
+{% block main %}
+<div>
+<h2>Welcome to your Dashboard</h2> 
+<p>Here you can manage and modify your account settings</p>
+</div>
 
-{% block main %}Dashboard{% endblock %}
+<div>
+    <p>Current email used: {{ currentMail }}</p>
+    <form action="/dashboard" method="POST">
+        <div>
+            <p> Change Track and Trace credentials</p>
+            <input type="text" name="newMailAddress" placeholder="Enter new email">
+            <input type="password" name="newMailPassword" placeholder="Email password">
+
+            <p> Change Account password</p>
+            <input type="password" name="filledAccountPassword" placeholder="Current password">
+            <input type="password" name="newMailPassword1" placeholder="New password">
+            <input type="password" name="newMailPassword2" placeholder="Repeat password">
+            <button type="submit">Submit changes</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

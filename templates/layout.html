@@ -19,15 +19,24 @@
               </button>
               <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav">
+                  {% if is_logged_in %}
+                  <li class="nav-item">
+                    <a class="nav-link" href="/logout">Logout</a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="/dashboard">Dashboard</a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="/ttInfo">Track and Trace</a>
+                  </li>
+                  {% else %}
                   <li class="nav-item">
                     <a class="nav-link active" aria-current="page" href="/register">Register</a>
                   </li>
                   <li class="nav-item">
                     <a class="nav-link" href="/login">Login</a>
                   </li>
-                  <li class="nav-item">
-                    <a class="nav-link" href="/logout">Logout</a>
-                  </li>
+                  {% endif %}
                 </ul>
               </div>
             </div>

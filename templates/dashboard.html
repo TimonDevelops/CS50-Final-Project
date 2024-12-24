@@ -3,25 +3,23 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block main %}
-<div>
-<h2>Welcome to your Dashboard</h2> 
-<p>Here you can manage and modify your account settings</p>
-</div>
-
-<div>
-    <p>Current email used: {{ currentMail }}</p>
-    <form action="/dashboard" method="POST">
+ <div class="mainDiv">
+    <h2>Welcome to your Dashboard</h2> 
+    <div class="content">
         <div>
-            <p> Change Track and Trace credentials</p>
-            <input type="text" name="newMailAddress" placeholder="Enter new email">
-            <input type="password" name="newMailPassword" placeholder="Email password">
-
-            <p> Change Account password</p>
-            <input type="password" name="filledAccountPassword" placeholder="Current password">
-            <input type="password" name="newMailPassword1" placeholder="New password">
-            <input type="password" name="newMailPassword2" placeholder="Repeat password">
-            <button type="submit">Submit changes</button>
+            <form action="/dashboard" method="POST">
+                <h4>Here you can manage and modify your account settings</h4>                    
+                <p>Current email used: {{ currentMail }}</p>
+                <h4> Change Track and Trace credentials</h4>
+                <input type="text" name="newMailAddress" placeholder="Enter new email">
+                <input type="password" name="newMailPassword" placeholder="Email password">
+                <h4> Change Account password</h4>
+                <input type="password" name="filledAccountPassword" placeholder="Current password">
+                <input type="password" name="newMailPassword1" placeholder="New password">
+                <input type="password" name="newMailPassword2" placeholder="Repeat password">                    
+                <button type="submit">Submit changes</button>
+            </form>
         </div>
-    </form>
+    </div>
 </div>
 {% endblock %}

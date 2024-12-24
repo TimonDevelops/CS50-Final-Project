@@ -3,24 +3,30 @@
 {% block title %}Register{% endblock %}
 
 {% block main %}
-<body>
-    <div>
-        <h2>Create Account</h2>
+<div class="mainDiv">
+    <h2>Create Account</h2>
+    <div class="content">
         <form action="/register" method="POST">
-            <input type="text" name="username" placeholder="Youre name" required>
-            <input type="password" name="password1" placeholder="Create password" required>
-            <input type="password" name="password2" placeholder="Repeat password" required>
+            <h4>Required</h4>
+            <div>
+                <input type="text" name="username" placeholder="Youre name" required>
+                <input type="password" name="password1" placeholder="Create password" required>
+                <input type="password" name="password2" placeholder="Repeat password" required>
+                <p>
+            </div>
+            <h4>Additional</h4>
             <p>
-            To streamline the package tracking process, include fields for the email address and password associated with the account receiving track-and-trace codes. 
-            These credentials will be used securely to retrieve and process tracking information efficiently.
+            To streamline the package tracking process for the upcoming update.<br>
+            Include fields for the email address and password associated with the account receiving track-and-trace codes.<br>
+            These credentials will be used securely to retrieve and process tracking information efficiently.<br>
             </p>            
             <input type="text" name="mailAddress" placeholder="Enter email" >
             <input type="password" name="mailPassword" placeholder="Email password" >
             <p>
             By using this app, you agree to the 
-            <button onclick="showDisclaimer()">Disclaimer</button>
+            <a href="#" onclick="showDisclaimer()"><span id="disclaimerName">Disclaimer</span></a>
             </p>
-            <div id="disclaimerModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); padding:20px; background-color:white; border:1px solid #ccc; box-shadow:0 4px 8px rgba(0,0,0,0.1); z-index:1000;">
+            <div id="disclaimerModal">
                 <h2>Disclaimer</h2>
                 <p>
                     By using this app, you authorize it to access your email account to search for track-and-trace codes and monitor the statuses of your packages. 
@@ -37,6 +43,7 @@
             <button type="submit">Create Account</button>
         </form>
     </div>
+</div>
     <script>
         function showDisclaimer() {
             document.getElementById('disclaimerModal').style.display = 'block';
@@ -45,5 +52,5 @@
             document.getElementById('disclaimerModal').style.display = 'none';
         }
     </script>
-</body>
+</div>
 {% endblock %}

@@ -1,7 +1,8 @@
 from flask import Flask, flash, redirect, render_template, request, session
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
-from functions import login_required, is_logged_in, dbChange, dbRead, ttInfo
+from functions import login_required, is_logged_in, dbChange, dbRead, ttUpdateDB # , ttMainFunction
+import re
 
 # configure app
 app = Flask(__name__)
@@ -18,7 +19,7 @@ Session(app)
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        # local variables, mail adress and mailpassword are not required at register
+        # local variables, mail adress and mail password are not required at register
         username = request.form.get("username")
         password1 = request.form.get("password1")
         password2 = request.form.get("password2")
@@ -31,7 +32,7 @@ def register():
             return redirect("/register")
         # check if username already exists in db
         checkUsername = dbRead("SELECT id FROM users WHERE LOWER(username) = LOWER(?)", (username,))
-        if len(checkUsername) > 0:
+        if checkUsername:
             flash("Username already exists", "error")
             return redirect("/register") 
         # check for password input
@@ -46,7 +47,7 @@ def register():
 
         # check if mailaddress already exists in db
         checkUserMail = dbRead("SELECT id FROM users WHERE LOWER(username) = LOWER(?)", (mailAddress,))
-        if len(checkUserMail) > 0:
+        if checkUserMail:
             flash("Mail adress already exists", "error")
             return redirect("/register") 
         
@@ -55,6 +56,8 @@ def register():
         mailHash = generate_password_hash(mailPassword)
         # update db with new dashboard data
         dbChange("INSERT INTO users (username, loginHash, mailAddress, mailHash) VALUES (?, ?, ?, ?)", (username, accountHash, mailAddress, mailHash))
+        # store mailPassword in db to login mail(encrypt this in updated version)
+        dbChange("UPDATE users SET mailPassword = ? WHERE username = ?", (mailPassword, username))
         # after succesfull register, redirect to login
         return redirect("/login")
 
@@ -95,6 +98,12 @@ def login():
         # update session
         session["user_id"] = rows[0]["id"]
         session["username"] = rows[0]["username"]
+        userID = session["user_id"]
+
+        ##### update in new version #####
+        # # update db with latest tt code information
+        # userID = session["user_id"]
+        # ttMainFunction(userID)
 
         # redirect to homepage
         flash(f"Welcome back {rows[0]['username']}", "succes")
@@ -108,13 +117,12 @@ def login():
 @app.route("/logout")
 @login_required
 def logout():
-        # clear session from dashboard info and clear g
+        # clear session and route to homepage
         session.clear()
         flash("Logged out", "succes")
-        # redirect dashboard to homepage
         return redirect("/")
 
-# dashboard page (contains dashboard panel and extra dashboard information, how to set up mail/proxy settings imap, settings to change (proxy)mail or color theme etc..)
+# dashboard page for account information and changes
 @app.route("/dashboard", methods=["GET", "POST"])
 @login_required
 def dashboard():
@@ -169,27 +177,29 @@ def dashboard():
 @login_required
 def usage():
     userID = session["user_id"]
-    rows = dbRead("SELECT ttStatus, ttTimestamp, itemDescription, ttCode FROM ttInfo WHERE userID = ?",  (userID,))
+    # tt info rows
+    rows = dbRead("SELECT ttStatus, ttTimestamp, itemDescription, ttCode FROM ttInfo WHERE userID = ?", (userID,))
     if request.method == "POST":
         # track and trace code is inserted manualy
-        userID = session["user_id"]
         ttCode = request.form.get("ttManual")
-        # if tt code is legit, then update db with correct tt code and other data
-        ttRequest = ttInfo(ttCode)
-        if ttRequest:
-            ttData = ttRequest["shipments"][0]
-            ttStatusData = ttData["status"]
-            ttTimeStamp = ttStatusData["timestamp"]
-            ttStatus = ttStatusData["description"]
-            itemDescription = request.form.get("itemDescription")
-            try:
-                dbChange("INSERT INTO ttInfo (userID, ttCode, ttTimestamp, ttStatus, itemDescription) VALUES (?, ?, ?, ?, ?)", (userID, ttCode, ttTimeStamp, ttStatus, itemDescription))
-            except Exception as e:
-                print(f"Error: {e}")
-
-        ############
-        return redirect("/ttInfo")
-    # db info to make row with
+        pattern = r"[A-Za-z]{4}\d{18}" # DHL Express
+        # check if tt code is legit
+        if re.match(pattern, ttCode):
+            # check if already in db
+            check = dbRead("SELECT 1 FROM ttInfo WHERE ttCode = ?", (ttCode,))
+            if not check:
+                itemDescription = request.form.get("itemDescription", "DHL package")
+                # update db with new tt code data
+                ttUpdateDB(ttCode, userID)
+                # set default description into manually added description
+                dbChange("UPDATE ttInfo SET itemDescription = ?, WHERE ttCode = ?", (itemDescription, ttCode))
+                return redirect("/ttInfo")
+            else:
+                flash("Track and Trace code already in use")
+                return redirect("/ttInfo") 
+        else:
+            flash("No valid DHL Express track and trace code")
+            return redirect("/ttInfo")
     else:
         # create tables with API
         return render_template("ttInfo.html", rows=rows, is_logged_in=is_logged_in())
@@ -197,7 +207,7 @@ def usage():
 # homepage(contains app information, updates, regular information, main page with login/registration button etc)
 @app.route("/")
 def index(): 
-    # if logged in, then show only logout button in navbar, else show only login and register button in navbar
+    # if logged in, show only logout button in navbar, else show only login and register button in navbar
     return render_template("index.html", is_logged_in=is_logged_in())
 
 if __name__ == "__main__":

@@ -1,4 +1,129 @@
+body {
+    background-color: rgb(238, 235, 235);
+    color: rgb(22, 65, 83);
+    height: 100vh;
+}
+body input {
+    border: 2px solid;
+    border-color:  rgb(22, 65, 83);
+    border-radius: 5px;
+    outline: none;
+}
+.mainDiv {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+main h2 {
+    margin-top: 30px;
+    margin-bottom: 30px;
+    text-align: center;
+}
+.content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 70%;
+}
+/* buttons */
+form button {
+    background-color: white;
+    color: rgb(22, 65, 83);
+    font-weight: bolder;
+    border-color:rgb(22, 65, 83);
+    border-radius: 5px;
+    border: 2px solid
+}
+form button:hover {
+    transform: scale(1.1); 
+    background-color: rgb(22, 65, 83);
+    border: 2px solid;
+    border-color: rgb(22, 65, 83);
+    color: white;
+}
+
+/* navbar */
 #logo {
     max-width: 50px;
-    height: auto;
+}
+#logoDiv {
+    width: 100%;
+    z-index: 10;
+}
+#hamburger {
+    z-index: 10;
+}
+#hamburgerB {
+    border: none;
+}
+@media (max-width: 991px) {
+    #logoDiv {
+        width: auto;
+    }
+}
+#navName {
+    position: absolute;
+    top: 8px;
+    width: 100%;
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+#navName h1 {
+    margin: 0;
+    padding: 0;
+}
+@media (max-width: 1200px) {
+    #navName h1{
+        font-size: 1.8em;
+    }
+}
+@media (max-width: 900px) {
+    #navName h1{
+        font-size: 1.6em
+    }
+}
+@media (max-width: 470px) {
+    #navName h1{
+        font-size: 1.4em;
+    }
+}
+@media (max-width: 400px) {
+    #navName h1{
+        font-size: 1.1em;
+    }
+}
+#navbarNav {
+    position: relative;
+}
+#ulNav {
+    float: right;
+}
+.nav-link {
+    white-space: nowrap; 
+    font-weight: bold;
+    color: rgb(87,90,94);
+}
+.nav-link:hover {
+    color: rgb(22, 65, 83);
+}
+
+/* disclaimer */
+#disclaimerName {
+    color:rgb(22, 65, 83);
+    text-decoration: underline;
+}
+#disclaimerModal {
+    display:none; 
+    position:fixed; 
+    top:50%; 
+    left:50%; 
+    transform:translate(-50%, -50%); 
+    padding:20px; 
+    background-color:white; 
+    border:1px solid #ccc; 
+    box-shadow:0 4px 8px rgba(0,0,0,0.1); 
+    z-index:1000;
 }

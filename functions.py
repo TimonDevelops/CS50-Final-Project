@@ -48,9 +48,6 @@ def dbChange(query, params=()):
         return False
 
 # function for DHL API call
-# real test codes:
-# - JVGL06349971001106931267
-# - JVGL06290308000728790420
 def ttInfo(code):
     # set url and header
     # test

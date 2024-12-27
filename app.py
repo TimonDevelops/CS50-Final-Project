@@ -1,7 +1,7 @@
 from flask import Flask, flash, redirect, render_template, request, session
 from flask_session import Session
 from werkzeug.security import check_password_hash, generate_password_hash
-from functions import login_required, is_logged_in, dbChange, dbRead, ttUpdateDB # , ttMainFunction
+from functions import login_required, is_logged_in, dbChange, dbRead, ttUpdateDB #, ttMainFunction
 import re
 
 # configure app
@@ -147,7 +147,7 @@ def dashboard():
         if newMailPassword:
             newMailPassword = request.form.get("newMailPassword").strip()
             hash = generate_password_hash(newMailPassword)
-            dbChange("UPDATE users SET mailHash = ? WHERE id = ?", (hash, userID))
+            dbChange("UPDATE users SET mailHash = ?, mailPassword = ? WHERE id = ?", (hash, newMailPassword, userID))
        # fill in recent password as security measure
         filledAccountPassword = request.form.get("filledAccountPassword")
         trueAccountPassword = dbRead("SELECT loginHash FROM users WHERE id = ?", (userID,))
@@ -163,7 +163,7 @@ def dashboard():
                 flash("Passwords don't match", "error")
                 return redirect("/dashboard")
             hash = generate_password_hash(newAccountPassword1)
-            dbChange("UPDATE users SET loginhash = ? WHERE id = ?", (hash, userID))
+            dbChange("UPDATE users SET loginHash = ? WHERE id = ?", (hash, userID))
 
         # redirect after all changes are checked
         flash("Credentials succesfully changed")
@@ -182,7 +182,7 @@ def usage():
     if request.method == "POST":
         # track and trace code is inserted manualy
         ttCode = request.form.get("ttManual")
-        pattern = r"[A-Za-z]{4}\d{18}" # DHL Express
+        pattern = r"[A-Za-z]{3,4}\d{20,21}" # DHL Express
         # check if tt code is legit
         if re.match(pattern, ttCode):
             # check if already in db
@@ -192,13 +192,13 @@ def usage():
                 # update db with new tt code data
                 ttUpdateDB(ttCode, userID)
                 # set default description into manually added description
-                dbChange("UPDATE ttInfo SET itemDescription = ?, WHERE ttCode = ?", (itemDescription, ttCode))
+                dbChange("UPDATE ttInfo SET itemDescription = ? WHERE ttCode = ?", (itemDescription, ttCode))
                 return redirect("/ttInfo")
             else:
                 flash("Track and Trace code already in use")
                 return redirect("/ttInfo") 
         else:
-            flash("No valid DHL Express track and trace code")
+            flash("No valid DHL Express Track and Trace code")
             return redirect("/ttInfo")
     else:
         # create tables with API

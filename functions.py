@@ -1,7 +1,7 @@
-from flask import redirect, session, request
+from flask import redirect, session, flash
 from functools import wraps
-import sqlite3, requests, imaplib, email, re
-from werkzeug.security import generate_password_hash
+from datetime import datetime
+import sqlite3, requests, imaplib, email, re, pytz
 
 # function to check if someone is logged in
 def is_logged_in():
@@ -29,6 +29,8 @@ def dbRead(query, params=()):
             rows = cursor.fetchall()
             return [dict(row) for row in rows]
     except sqlite3.Error as e:
+        print(query)
+        print(params)
         print(f"Database error in dbread(): {e}")
         return []
     except Exception as e:
@@ -53,12 +55,12 @@ def ttInfo(code):
     # test
     testBase_url = "https://api-test.dhl.com/track/shipments"
     headers = {
-        "DHL-API-Key" : "Key in DHL developer portal"
+        "DHL-API-Key" : "demo-key"
     }
     # real
     realBase_url = "https://api-eu.dhl.com/track/shipments"
     headers = {
-        "DHL-API-Key" : "Key in DHL developer portal"
+        "DHL-API-Key" : "key_in_developer_portal"
     }
     url = f"{realBase_url}?trackingNumber={code}"
     try: 
@@ -66,16 +68,19 @@ def ttInfo(code):
         if response.status_code == 200:
             try:
                 ttData = response.json()
+                print(f"ttData: {ttData}")
                 return ttData
             except ValueError:
                 return {"error": "No valid JSON-response from API."}
-        else:    
-             return {"error": f"API-error: {response.status_code} - {response.text}"}
+        else:
+             print(f"error : API-error: {response.status_code} - {response.text}")
+             return False
     except:
-        return {"error": f"Network problem"}
+        print(f"error: Network problem")
+        return False
     
 # create mail parser
-# connect with email
+# connect with email outlook
 #1
 def emailConnect(address, password):
     try:
@@ -90,7 +95,7 @@ def emailConnect(address, password):
 # find tt codes
 #3
 def ttCodeFinder(emailBody):
-    pattern = r"[A-Za-z]{4}\d{18}" # regular expression for DHL Express code
+    pattern = r"[A-Za-z]{3,4}\d{20,21}" # regular expression for DHL Express code
     match = re.search(pattern, emailBody)
     if match:
         # return complete code as 1 string
@@ -160,24 +165,31 @@ def ttUpdateDB(ttCode, userID):
         ttData = ttRequest["shipments"][0]
         ttStatusData = ttData["status"]
         ttTimeStamp = ttStatusData["timestamp"]
-        ttStatus = ttStatusData["description"]
+        ttStatus = str(ttStatusData["description"]).lower()
+        # convert timestamp
+        parsedTime = datetime.fromisoformat(ttTimeStamp)
+        nlTimeZone= pytz.timezone("Europe/Amsterdam")
+        nlTime = parsedTime.astimezone(nlTimeZone)
+        formattedTime = nlTime.strftime("%Y-%m-%d at %H:%M:%S")
+
        
         # check if tt code is new
-        check = dbRead("SELECT userID FROM users WHERE ttCode = ?", (ttCode,))
+        check = dbRead("SELECT userID FROM ttInfo WHERE ttCode = ?", (ttCode,))
         if not check:
                 # new code
                 try:
-                    dbChange("INSERT INTO ttInfo (userID, ttCode, ttTimeStamp, ttStatus) VALUES (?, ?, ?, ?)", (userID, ttCode, ttTimeStamp, ttStatus))
+                    dbChange("INSERT INTO ttInfo (userID, ttCode, ttTimeStamp, ttStatus) VALUES (?, ?, ?, ?)", (userID, ttCode, formattedTime, ttStatus))
                 except Exception as e:
                         print(f"Error inserting new track and trace data into database: {e}")
         # excisting code
         else:
             try:
-                dbChange("UPDATE ttInfo SET userID = ?, ttTimeStamp = ?, ttStatus = ? WHERE ttCode = ?", (userID, ttTimeStamp, ttStatus, ttCode))
+                dbChange("UPDATE ttInfo SET userID = ?, ttTimeStamp = ?, ttStatus = ? WHERE ttCode = ?", (userID, formattedTime, ttStatus, ttCode))
             except Exception as e:
                     print(f"Error updating track and trace data in database: {e}")
     else:
-        print(f"Error fetching data for Track and Trace code {ttCode}.")
+        flash(f"Error fetching data for Track and Trace code {ttCode}.")
+        return redirect("/ttInfo")
         
 # mainfunction with mailparser, ttcode finder, API calls 
 def ttMainFunction(userID):
@@ -193,8 +205,6 @@ def ttMainFunction(userID):
                 print(f"Error: Missing email address or password for user {userID}.")
                 return
             # connect with mail
-            print(f"Mail address: {mailAddress}")
-            print(f"Mail password: {mailPassword}")
             mail = emailConnect(mailAddress, mailPassword)
             if not mail:
                 print(f"Error: Could not connect to email for user {userID}.")
@@ -202,7 +212,7 @@ def ttMainFunction(userID):
             # call ttCodeFinder with ttcode in each email and return tt code
             ttCodeRow = searchMails(mail)
             if not ttCodeRow:
-                print("No track-and-trace codes found in emails.")
+                print("No Track-and-Trace codes found in emails.")
             for code in ttCodeRow:
                 ttUpdateDB(code, userID)
         except Exception as e:

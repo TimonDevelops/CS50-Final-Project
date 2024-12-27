@@ -16,12 +16,12 @@
             {% set pending_packages = [] %}
             <h4>Pending packages</h4>
                 {% for row in rows %}
-                    {% if row["ttStatus"] != "Delivered" %}
+                    {% if "delivered" not in row["ttStatus"] %}
                         {% set _ = pending_packages.append(row) %}
-                        <p>{{ row["ttCode"] }}</p>
-                        <p>{{ row["ttStatus"] }}</p>
-                        <p>{{ row["ttTimeStamp"] }}</p>
-                        <p>{{ row["itemDescription"] }}</p> 
+                        <div class="ttMessage">
+                            <img src="../static/PTLogo-transp.png" alt="Package tracker logo" class="logoInfo">
+                            <p>{{ row["itemDescription"] }} current status is: {{ row["ttStatus"] }} on date {{ row["ttTimeStamp"] }} - Track and Trace code {{ row["ttCode"] }}</p>
+                        </div>
                     {% endif %}
                 {% endfor %}
             {% if not pending_packages %}
@@ -31,9 +31,12 @@
             {% set delivered_packages = [] %}
             <h4>Delivered packages</h4>
                 {% for row in rows %}
-                    {% if row["ttStatus"] == "Delivered" %}
+                    {% if "delivered" in row["ttStatus"] %}
                         {% set _ = delivered_packages.append(row) %}
-                        <p>{{ row["itemDescription"] }} {{ row["ttStatus"] }} at {{ row["ttTimeStamp"] }} with Track and Trace code {{ row["ttCode"] }}</p>
+                        <div class="ttMessage">
+                            <img src="../static/PTLogo-transp.png" alt="Package tracker logo" class="logoInfo">
+                            <p>{{ row["itemDescription"] }} {{ row["ttStatus"] }} on date {{ row["ttTimeStamp"] }} - Track and Trace code {{ row["ttCode"] }}</p>
+                        </div>
                     {% endif %}
                 {% endfor %}
             {% if not delivered_packages %}
